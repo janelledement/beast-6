@@ -1,0 +1,146 @@
+<script src="simpleTest.js"></script>
+<script>
+
+  /*
+    Description: provide a more reliable toFixed function.  5,6,7,8,9 always
+    rounds up and 0,1,2,3,4 always rounds down. This toFixed uses traditional
+    rounding, not finantial or bankers rounding. 
+
+    In accounting.js toFixed involves two helper functions: checkPrecision and unformat.
+    While I don't do anything don't copy unformat I do check the precision parameter.
+    I might include this in the future.
+
+    Function signature: myToFixed(number, precision)
+
+    Parameters:
+      number: Can be any positive or negative number. Can't be currency with symbols.
+      precision: Should be positive integer. (Default will be 0). If a float is provided, I round this number.
+
+    Return: 
+      A string number rounded to the provided precision.
+  */
+
+  /*
+    Solution 1: Using array-methods
+  */
+  // function myToFixed(number, precision) {
+  //   precision = Math.round(Math.abs(precision));
+  //   var power = Math.pow(10, precision);
+  //   var decimals;
+    
+  //   if (!Number.isInteger(number)) {
+
+  //     // split number at decimal to get two portions, decimals and integer
+  //     number = String(number).split('.');
+
+  //     // split up decimals for manipulation
+  //     decimals = number[1].split('');
+      
+  //     // pad with zeros if length of decimals is less than precision
+  //     while (decimals.length < precision) {
+  //       decimals.push('0');
+  //     }
+      
+  //     // add decimal
+  //     decimals.splice(precision, 0, '.');
+
+  //     // replace number[1] with string of decimals
+  //     number[1] = decimals.join('');
+
+  //     // rejoin two halfs of number
+  //     number = number.join('');
+
+  //     //round and divide by power
+  //     number = Math.round(number) / power;
+  //   }
+    
+  //   return number.toFixed(precision);		
+	// }
+
+  /*
+    Solution 2: Non-array method version
+  */
+  function myToFixed(number, precision) {
+    precision = Math.round(Math.abs(precision)) || 0;
+    var power = Math.pow(10, precision);
+
+    if (!Number.isInteger(number)) {
+      // convert number to string for manipulation
+      number = String(number);
+
+      // use substring to get digits and integer sections seperate
+      var decimalIndex = number.indexOf('.');
+      var wholeNumber = number.substring(0, decimalIndex);
+      var decimals = number.substring(decimalIndex + 1);
+     
+      // if length of decimals is less than precision, add zeros
+      while (decimals.length < precision) {
+        decimals += '0';
+      }
+      // insert decimal into correct spot on decimals
+      decimals = decimals.substring(0, precision) + '.' + decimals.substring(precision);
+
+      // add to substrings together
+      number = wholeNumber + decimals;
+
+      // round and divide by power
+      number = Math.round(number) / power;
+    }
+
+    return number.toFixed(precision);
+  }
+
+
+  tests({
+    'It should round up when last number is 5,6,7,8,9': function() {
+      eq(myToFixed(0.616, 2), '0.62');
+      eq(myToFixed(0.617, 2), '0.62');
+      eq(myToFixed(0.618, 2), '0.62');
+      eq(myToFixed(0.619, 2), '0.62');
+      // known strage cases
+      eq(myToFixed(0.615, 2), '0.62');
+      eq(myToFixed(10.235, 2), '10.24');
+      eq(myToFixed(1.005, 2), '1.01');
+    },
+    'It should round down when last number is 0, 1, 2, 3, 4': function () {
+      eq(myToFixed(0.614, 2), '0.61');
+      eq(myToFixed(10.233, 2), '10.23');
+      eq(myToFixed(1.002, 2), '1.00');
+      eq(myToFixed(1.001, 2), '1.00');
+    },
+    'It works with negative numbers in traditional rounding, not finantial rounding': function() {
+      eq(myToFixed(-0.615, 2), '-0.61'); 
+    },
+    'It converts precisions that are floats or negative to positive integers': function() {
+      // this is because toFixed in accounting js does this with checkPrecision method
+      eq(myToFixed(12.314, -2), '12.31');
+      eq(myToFixed(12.315, 2.4), '12.32');
+    },
+    'It handles rounding with zero precision': function() {
+      eq(myToFixed(10.635, 0), '11');
+    },
+    'It handles exponential numbers.': function () {
+      eq(myToFixed(1.23e+20, 2), "123000000000000000000.00");
+    },
+    'It should handle integers': function () {
+      var result = myToFixed(100, 3);
+      eq(result, '100.000');    
+    },
+    'It should be able to handle a greater precision than the provided decimals': function () {
+      var result = myToFixed('0.615', 4);
+      eq(result, '0.6150'); 
+      eq(myToFixed(0.615, 5),  '0.61500')   
+    },
+    'It should handle this random collection of tests': function() {
+      eq(myToFixed(1.002005, 5), '1.00201');
+      eq(myToFixed(1.002005, 4), '1.0020');
+      eq(myToFixed(10.678, 1), '10.7');
+      eq(myToFixed(1.002005, 5), '1.00201');
+      eq(myToFixed(10.235, 0), '10');
+      eq(myToFixed(10.635, 0), '11');
+      eq(myToFixed(.2356, 3), '0.236');
+    }
+  });
+  
+  
+</script>
